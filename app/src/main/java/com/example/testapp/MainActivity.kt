@@ -2,6 +2,8 @@ package com.example.testapp
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.TextView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newSingleThreadContext
@@ -30,9 +32,20 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        asyncLoadNews()
+    }
 
+    private fun asyncLoadNews() {
         GlobalScope.launch(netDispatcher) {
             val headlines = fetchHeadlines()
+            findViewById<TextView>(R.id.newsCount).let {
+                GlobalScope.launch(Dispatchers.Main) {
+                    it.text = "Found ${headlines.size} news"
+
+                }
+            }
         }
+
+
     }
 }
