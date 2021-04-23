@@ -13,7 +13,7 @@ class MainActivity : AppCompatActivity() {
     private val factory = DocumentBuilderFactory.newInstance()
     private val feeds = listOf("https://www.npr.org/rss/rss.php?id=1001",
             "https://www.npr.org/rss/rss.php?id=1001",
-            "https://www.npr.org/rss/rss.php?id=1001")
+            "invalid url")
 
     private fun asyncFetchHeadlines(feed: String, dispatcher: CoroutineDispatcher) = GlobalScope.async(dispatcher) {
         val builder = factory.newDocumentBuilder()
@@ -45,14 +45,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             requests.forEach {
-                try {
-                    it.await()
-                } catch (e : Throwable) {
-                    print(e.message)
-                }
+                it.join()
             }
 
-            val headlines = requests.flatMap { it.getCompleted() }
+            val headlines = requests.filter { !it.isCancelled }.flatMap { it.getCompleted() }
             findViewById<TextView>(R.id.newsCount).let {
                 GlobalScope.launch(Dispatchers.Main) {
                     it.text = "Found ${headlines.size} news in ${requests.size} feeds"
