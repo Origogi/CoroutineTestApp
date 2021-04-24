@@ -40,7 +40,16 @@ class MainActivity : AppCompatActivity() {
                 .filter { "item" == it.tagName }
                 .map {
                     val title = it.getElementsByTagName("title").item(0).textContent
-                    val summary = it.getElementsByTagName("description").item(0).textContent
+                    val summary =
+                        it.getElementsByTagName("description").item(0).textContent.let { text ->
+                            if (!text.startsWith("div") && text.contains("<div")) {
+                                text.substring(0, text.indexOf(",div"))
+                            } else {
+                                text
+                            }
+                        }
+
+
                     Article(feed.name, title, summary)
                 }
         }
