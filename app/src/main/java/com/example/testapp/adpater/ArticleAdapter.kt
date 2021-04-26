@@ -7,10 +7,18 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testapp.R
 import com.example.testapp.model.Article
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
-class ArticleAdapter : RecyclerView.Adapter<ArticleAdapter.ViewHolder>() {
 
-    val articles = mutableListOf<Article>()
+interface ArticleLoader {
+    suspend fun loadMore()
+}
+
+class ArticleAdapter(private val loader: ArticleLoader) : RecyclerView.Adapter<ArticleAdapter.ViewHolder>() {
+
+    private val articles = mutableListOf<Article>()
+    private var loading = false
 
     class ViewHolder(val layout: LinearLayout, val feed: TextView, val title: TextView, val summary: TextView) : RecyclerView.ViewHolder(layout)
 
@@ -27,6 +35,15 @@ class ArticleAdapter : RecyclerView.Adapter<ArticleAdapter.ViewHolder>() {
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val article = articles[position]
+
+        if (!loading && position >= articles.size - 2) {
+            loading = true
+
+            GlobalScope.launch {
+                loader.loadMore()
+                loading = false
+            }
+        }
 
         holder.feed.text = article.feed
         holder.summary.text = article.summary
