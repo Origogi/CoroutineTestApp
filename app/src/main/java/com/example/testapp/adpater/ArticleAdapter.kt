@@ -36,14 +36,14 @@ class ArticleAdapter(private val loader: ArticleLoader) : RecyclerView.Adapter<A
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val article = articles[position]
 
-        if (!loading && position >= articles.size - 2) {
-            loading = true
-
-            GlobalScope.launch {
-                loader.loadMore()
-                loading = false
-            }
-        }
+//        if (!loading && position >= articles.size - 2) {
+//            loading = true
+//
+//            GlobalScope.launch {
+//                loader.loadMore()
+//                loading = false
+//            }
+//        }
 
         holder.feed.text = article.feed
         holder.summary.text = article.summary
@@ -51,6 +51,16 @@ class ArticleAdapter(private val loader: ArticleLoader) : RecyclerView.Adapter<A
     }
 
     override fun getItemCount() = articles.size
+
+    fun add (article: Article) {
+        this.articles.add(article)
+        notifyDataSetChanged()
+    }
+
+    fun clear() {
+        this.articles.clear()
+        notifyDataSetChanged()
+    }
 
     fun add (articles : List<Article>) {
         this.articles.addAll(articles)
