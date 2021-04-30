@@ -1,4 +1,4 @@
-package com.example.testapp
+package com.example.testapp.searcher
 
 import com.example.testapp.model.Article
 import com.example.testapp.model.Feed
@@ -6,7 +6,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.newFixedThreadPoolContext
 import org.w3c.dom.Element
@@ -57,6 +56,7 @@ class Searcher {
 
                 if (title.toLowerCase().contains(query.toLowerCase()) || summary.toLowerCase().contains(query.toLowerCase()) ) {
                     channel.send(Article(feed.name, title, summary))
+                    ResultsCounter.increment()
                 }
             }
     }

@@ -5,26 +5,36 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.testapp.adpater.ArticleAdapter
 import com.example.testapp.adpater.ArticleLoader
 import com.example.testapp.producer.ArticleProducer
+import com.example.testapp.searcher.ResultsCounter
+import com.example.testapp.searcher.Searcher
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlin.coroutines.CoroutineContext
 
-class SearchActivity : AppCompatActivity(), ArticleLoader {
+class SearchActivity() : AppCompatActivity(), ArticleLoader, CoroutineScope {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var viewAdapter: ArticleAdapter
     private lateinit var viewManager: RecyclerView.LayoutManager
 
     private val searcher = Searcher()
+    private lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Main + job
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_search)
+
+        job = Job()
 
         viewManager = LinearLayoutManager(this)
         viewAdapter = ArticleAdapter(this)
@@ -35,7 +45,7 @@ class SearchActivity : AppCompatActivity(), ArticleLoader {
 
         findViewById<Button>(R.id.searchButton).setOnClickListener {
             viewAdapter.clear()
-            GlobalScope.launch {
+            launch(IO) {
                 search()
             }
         }
@@ -46,21 +56,14 @@ class SearchActivity : AppCompatActivity(), ArticleLoader {
         val producer = ArticleProducer.producer
 
         if (!producer.isClosedForReceive) {
-
-            withContext(Main) {
-                findViewById<View>(R.id.progressBar).visibility = View.VISIBLE
-
-                recyclerView.alpha = 0.3f
-            }
-            delay(2000)
+            findViewById<View>(R.id.progressBar).visibility = View.VISIBLE
+            recyclerView.alpha = 0.3f
 
             val articles = producer.receive()
-            withContext(Main) {
-                recyclerView.alpha = 1.0f
+            recyclerView.alpha = 1.0f
+            findViewById<View>(R.id.progressBar).visibility = View.GONE
+            viewAdapter.add(articles)
 
-                findViewById<View>(R.id.progressBar).visibility = View.GONE
-                viewAdapter.add(articles)
-            }
         }
     }
 
@@ -69,10 +72,15 @@ class SearchActivity : AppCompatActivity(), ArticleLoader {
 
         val channel = searcher.search(query)
 
+        val notifications = ResultsCounter.getNotification()
+
         while (!channel.isClosedForReceive) {
             val article = channel.receive()
 
-            GlobalScope.launch(Main) {
+            val newMount = "Result : ${notifications.receive()}"
+
+            withContext(Main) {
+                findViewById<TextView>(R.id.results).text = newMount
                 viewAdapter.add(article)
             }
         }
