@@ -46,8 +46,13 @@ class SearchActivity() : AppCompatActivity(), ArticleLoader, CoroutineScope {
         findViewById<Button>(R.id.searchButton).setOnClickListener {
             viewAdapter.clear()
             launch(IO) {
+                ResultsCounter.reset()
                 search()
             }
+        }
+
+        launch() {
+            updateResult()
         }
     }
 
@@ -56,31 +61,33 @@ class SearchActivity() : AppCompatActivity(), ArticleLoader, CoroutineScope {
         val producer = ArticleProducer.producer
 
         if (!producer.isClosedForReceive) {
-            findViewById<View>(R.id.progressBar).visibility = View.VISIBLE
-            recyclerView.alpha = 0.3f
-
             val articles = producer.receive()
-            recyclerView.alpha = 1.0f
-            findViewById<View>(R.id.progressBar).visibility = View.GONE
             viewAdapter.add(articles)
+        }
+    }
 
+    private suspend fun updateResult() {
+        println("hello")
+
+        val notifications = ResultsCounter.getNotification()
+
+        while (!notifications.isClosedForReceive) {
+            val count = notifications.receive()
+            println(count)
+            val newMount = "Result : $count"
+            withContext(Main) {
+                findViewById<TextView>(R.id.results).text = newMount
+            }
         }
     }
 
     private suspend fun search() {
         val query = findViewById<EditText>(R.id.searchText).text.toString()
-
         val channel = searcher.search(query)
-
-        val notifications = ResultsCounter.getNotification()
 
         while (!channel.isClosedForReceive) {
             val article = channel.receive()
-
-            val newMount = "Result : ${notifications.receive()}"
-
             withContext(Main) {
-                findViewById<TextView>(R.id.results).text = newMount
                 viewAdapter.add(article)
             }
         }
